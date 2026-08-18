@@ -36200,6 +36200,14 @@ ar.ContainerFrame=ar.UIElements.ContainerFrameCanvas
 
 ak.AddSignal(ar.UIElements.Main.MouseButton1Click,function()
 if not ar.Locked then
+-- WindUI FX: click press + spring-back on tab
+local _ts=game:GetService"TweenService"
+local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
+if not sc then sc=Instance.new("UIScale") sc.Scale=1 sc.Parent=ar.UIElements.Main end
+_ts:Create(sc,TweenInfo.new(0.07,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=0.96}):Play()
+task.delay(0.1,function()
+_ts:Create(sc,TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
+end)
 ao:SelectTab(as)
 end
 end)
@@ -36245,10 +36253,26 @@ end
 
 ak.AddSignal(ar.UIElements.Main.MouseEnter,function()
 if not ar.Locked then
+-- WindUI FX: smooth tab hover with subtle scale nudge
 ak.SetThemeTag(ar.UIElements.Main.Frame,{
 ImageTransparency="TabBackgroundHoverTransparency",
 ImageColor3="TabBackgroundHover",
-},0.1)
+},0.12)
+local _ts=game:GetService"TweenService"
+if ar.UIElements.Main:FindFirstChildOfClass"UIScale" then
+_ts:Create(ar.UIElements.Main:FindFirstChildOfClass"UIScale",TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1.025}):Play()
+else
+local sc=Instance.new("UIScale") sc.Scale=1 sc.Parent=ar.UIElements.Main
+_ts:Create(sc,TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1.025}):Play()
+end
+end
+end)
+ak.AddSignal(ar.UIElements.Main.MouseLeave,function()
+if not ar.Locked then
+local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
+if sc then
+game:GetService"TweenService":Create(sc,TweenInfo.new(0.15,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1}):Play()
+end
 end
 end)
 ak.AddSignal(ar.UIElements.Main.InputEnded,function()
@@ -36271,7 +36295,11 @@ end
 if not ar.Locked then
 ak.SetThemeTag(ar.UIElements.Main.Frame,{
 ImageTransparency="TabBorderTransparency",
-},0.1)
+},0.12)
+local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
+if sc then
+game:GetService"TweenService":Create(sc,TweenInfo.new(0.15,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1}):Play()
+end
 end
 end)
 
@@ -37527,6 +37555,88 @@ PaddingBottom=UDim.new(0,aw.UIPadding/2),
 
 })
 
+-- ── WindUI FX: Tab Search Bar ──
+local _tabSearchBarHeight = 34
+local _tabSearchBar = ao("Frame",{
+	Name = "WindUI_TabSearchBar",
+	Size = UDim2.new(1, -(aw.UIPadding), 0, _tabSearchBarHeight),
+	Position = UDim2.new(0, aw.UIPadding/2, 0, aw.UIPadding/2),
+	BackgroundTransparency = 1,
+})
+
+local _tabSearchBg = an.NewRoundFrame(10, "Squircle", {
+	Size = UDim2.new(1, 0, 1, 0),
+	ThemeTag = { ImageColor3 = "TabBackground" },
+	ImageTransparency = 0.3,
+	Parent = _tabSearchBar,
+	Name = "Bg",
+}, {
+	an.NewRoundFrame(10, "SquircleOutline", {
+		Size = UDim2.new(1, 0, 1, 0),
+		ThemeTag = { ImageColor3 = "TabBorder" },
+		ImageTransparency = 0.5,
+		Name = "Outline",
+	}),
+})
+
+local _tabSearchIcon = ao("ImageLabel", {
+	Size = UDim2.new(0, 13, 0, 13),
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 9, 0.5, 0),
+	BackgroundTransparency = 1,
+	ThemeTag = { ImageColor3 = "Text" },
+	ImageTransparency = 0.5,
+	Image = an.Icon("search")[1],
+	ImageRectOffset = an.Icon("search")[2].ImageRectPosition,
+	ImageRectSize = an.Icon("search")[2].ImageRectSize,
+	Parent = _tabSearchBar,
+	ZIndex = 2,
+})
+
+local _tabSearchBox = ao("TextBox", {
+	Size = UDim2.new(1, -28, 1, -8),
+	Position = UDim2.new(0, 25, 0.5, 0),
+	AnchorPoint = Vector2.new(0, 0.5),
+	BackgroundTransparency = 1,
+	ThemeTag = { TextColor3 = "Text" },
+	TextTransparency = 0.3,
+	PlaceholderText = "Search tabs...",
+	PlaceholderColor3 = Color3.fromRGB(160, 160, 160),
+	TextSize = 13,
+	FontFace = Font.new(an.Font, Enum.FontWeight.Medium),
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ClearTextOnFocus = false,
+	Text = "",
+	ZIndex = 2,
+	Parent = _tabSearchBar,
+})
+
+-- Focus glow on search bar
+an.AddSignal(_tabSearchBox.Focused, function()
+	an.Tween(_tabSearchBg, 0.15, { ImageTransparency = 0.15 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+end)
+an.AddSignal(_tabSearchBox.FocusLost, function()
+	an.Tween(_tabSearchBg, 0.2, { ImageTransparency = 0.3 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+end)
+
+-- Filter tabs by search text
+an.AddSignal(_tabSearchBox:GetPropertyChangedSignal("Text"), function()
+	local query = string.lower(_tabSearchBox.Text)
+	for _, tabBtn in ipairs(aw.UIElements.SideBar.Frame:GetChildren()) do
+		if tabBtn:IsA("Frame") or tabBtn:IsA("ImageLabel") or tabBtn:IsA("ImageButton") then
+			local lbl = tabBtn:FindFirstChildWhichIsA("Frame", true)
+			local txt = lbl and lbl:FindFirstChildWhichIsA("TextLabel", true)
+			if txt then
+				local match = query == "" or string.find(string.lower(txt.Text), query, 1, true)
+				an.Tween(tabBtn, 0.12, { Size = UDim2.new(1, -7, 0, match and tabBtn.AbsoluteSize.Y or 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
+				tabBtn.Visible = true
+				tabBtn.ClipsDescendants = true
+			end
+		end
+	end
+end)
+-- ── End Tab Search Bar ──
+
 aw.UIElements.SideBarContainer=ao("Frame",{
 Size=UDim2.new(
 0,
@@ -37547,6 +37657,18 @@ AnchorPoint=Vector2.new(0,1),
 }),
 aw.UIElements.SideBar,
 })
+
+-- Attach Tab Search Bar to sidebar container
+_tabSearchBar.Parent = aw.UIElements.SideBarContainer
+-- Shrink sidebar to leave room for the search bar at top
+aw.UIElements.SideBar.Size = UDim2.new(
+	aw.UIElements.SideBar.Size.X.Scale,
+	aw.UIElements.SideBar.Size.X.Offset,
+	1,
+	(not aw.HideSearchBar and -45 or 0) - _tabSearchBarHeight - aw.UIPadding
+)
+aw.UIElements.SideBar.Position = UDim2.new(0, 0, 1, 0)
+aw.UIElements.SideBar.AnchorPoint = Vector2.new(0, 1)
 
 if aw.ScrollBarEnabled then
 as(
