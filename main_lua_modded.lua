@@ -36578,6 +36578,9 @@ ImageTransparency=.7,
 })
 })
 
+-- WindUI FX: compact section header height
+ar.HeaderSize=34
+
 local au=ai("Frame",{
 Size=UDim2.new(1,0,0,ar.HeaderSize),
 BackgroundTransparency=1,
@@ -36591,36 +36594,43 @@ Text="",
 },{
 as,
 ai("TextLabel",{
-Text=ar.Title,
+Text=ar.Title:upper(),
 TextXAlignment="Left",
 Size=UDim2.new(
 1,
 as and(-ar.IconSize-10)*2
 or(-ar.IconSize-10),
-
 1,
 0
 ),
 ThemeTag={
 TextColor3="Text",
 },
-FontFace=Font.new(af.Font,Enum.FontWeight.SemiBold),
-TextSize=14,
+FontFace=Font.new(af.Font,Enum.FontWeight.Bold),
+TextSize=11,
 BackgroundTransparency=1,
-TextTransparency=.7,
-
-TextWrapped=true
+TextTransparency=0.5,
+TextWrapped=true,
+LetterSpacing=2,
 }),
 ai("UIListLayout",{
 FillDirection="Horizontal",
 VerticalAlignment="Center",
-Padding=UDim.new(0,10)
+Padding=UDim.new(0,7)
 }),
 at,
 ai("UIPadding",{
 PaddingLeft=UDim.new(0,11),
-PaddingRight=UDim.new(0,11),
+PaddingRight=UDim.new(0,9),
 })
+}),
+-- Thin separator line under header
+ai("Frame",{
+Size=UDim2.new(1,-22,0,1),
+Position=UDim2.new(0,11,0,ar.HeaderSize-1),
+BackgroundTransparency=0.85,
+ThemeTag={BackgroundColor3="Text"},
+Name="Divider",
 }),
 ai("Frame",{
 BackgroundTransparency=1,
@@ -36628,7 +36638,7 @@ Size=UDim2.new(1,0,0,0),
 AutomaticSize="Y",
 Name="Content",
 Visible=true,
-Position=UDim2.new(0,0,0,ar.HeaderSize)
+Position=UDim2.new(0,0,0,ar.HeaderSize+2)
 },{
 ai("UIListLayout",{
 FillDirection="Vertical",
@@ -36651,20 +36661,36 @@ end
 function ar.Open(av)
 if ar.Expandable then
 ar.Opened=true
-ak(au,0.33,{
-Size=UDim2.new(1,0,0,ar.HeaderSize+(au.Content.AbsoluteSize.Y/ap))
-},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
-
-ak(at.ImageLabel,0.1,{Rotation=180},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
+-- WindUI FX: smoother spring open with content fade
+local TweenService=game:GetService"TweenService"
+local contentH=au.Content.AbsoluteSize.Y/ap
+TweenService:Create(au,TweenInfo.new(0.38,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+Size=UDim2.new(1,0,0,ar.HeaderSize+contentH+4)
+}):Play()
+TweenService:Create(at.ImageLabel,TweenInfo.new(0.22,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
+Rotation=180
+}):Play()
+-- Fade content in
+au.Content.Visible=true
+TweenService:Create(au.Content,TweenInfo.new(0.18,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
+GroupTransparency=0
+}):Play()
 end
 end
 function ar.Close(av)
 if ar.Expandable then
 ar.Opened=false
-ak(au,0.26,{
+local TweenService=game:GetService"TweenService"
+-- Fade content out then collapse
+TweenService:Create(au.Content,TweenInfo.new(0.1,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
+GroupTransparency=1
+}):Play()
+TweenService:Create(au,TweenInfo.new(0.28,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
 Size=UDim2.new(1,0,0,ar.HeaderSize)
-},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
-ak(at.ImageLabel,0.1,{Rotation=0},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
+}):Play()
+TweenService:Create(at.ImageLabel,TweenInfo.new(0.22,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
+Rotation=0
+}):Play()
 end
 end
 
@@ -38935,6 +38961,148 @@ end)
 
 aw.TabModule=G
 
+-- ── WindUI FX: Tab Search Bar ──────────────────────────────────
+do
+	local TweenService = game:GetService("TweenService")
+	local an2 = at -- reuse creator shorthand
+
+	-- Search bar container (sits above the sidebar scrollframe)
+	local tabSearchHeight = 34
+	local tabSearchMargin = math.floor(aw.UIPadding / 2)
+
+	-- Shrink sidebar to make room for search bar at top
+	aw.UIElements.SideBar.Size = UDim2.new(
+		1,
+		aw.ScrollBarEnabled and -3 - tabSearchMargin or 0,
+		1,
+		(not aw.HideSearchBar and -45 or 0) - tabSearchHeight - tabSearchMargin - 2
+	)
+
+	local tabSearchFrame = an2("Frame", {
+		Name  = "WindUI_TabSearch",
+		Size  = UDim2.new(1, -tabSearchMargin * 2, 0, tabSearchHeight),
+		Position = UDim2.new(0, tabSearchMargin, 0, 0),
+		BackgroundTransparency = 1,
+		Parent = aw.UIElements.SideBarContainer,
+		ZIndex = 10,
+	})
+
+	-- Background pill
+	local tabSearchBg = an2("Frame", {
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 0.93,
+		ThemeTag = { BackgroundColor3 = "Text" },
+		Parent = tabSearchFrame,
+	}, {
+		an2("UICorner", { CornerRadius = UDim.new(0, 10) }),
+		an2("UIStroke", { Thickness = 1, Transparency = 0.88, ThemeTag = { Color = "Text" } }),
+	})
+
+	-- Search icon
+	local iconImg = at("ImageLabel", {
+		Size       = UDim2.new(0, 14, 0, 14),
+		BackgroundTransparency = 1,
+		Image      = "rbxassetid://92867583610071", -- a-arrow-down fallback; will be overwritten
+		ThemeTag   = { ImageColor3 = "Icon" },
+		ImageTransparency = 0.35,
+		LayoutOrder = 1,
+		Parent     = tabSearchBg,
+	})
+	-- Use the library's own icon helper if available
+	task.spawn(function()
+		local ok, icons = pcall(function() return a.load'b' end)
+		if ok and icons then
+			local mag = icons["search"] or icons["magnifying-glass"]
+			if mag then
+				iconImg.Image = mag
+				iconImg.ImageRectOffset = Vector2.new(0,0)
+				iconImg.ImageRectSize  = Vector2.new(0,0)
+			end
+		end
+	end)
+
+	-- Clear / X button
+	local clearBtn = at("TextButton", {
+		Size  = UDim2.new(0, 14, 0, 14),
+		BackgroundTransparency = 1,
+		Text  = "✕",
+		TextSize = 11,
+		ThemeTag = { TextColor3 = "Text" },
+		TextTransparency = 0.5,
+		Visible = false,
+		LayoutOrder = 3,
+		Parent = tabSearchBg,
+	})
+
+	-- TextBox
+	local tabSearchBox = at("TextBox", {
+		Size  = UDim2.new(1, -42, 1, 0),
+		BackgroundTransparency = 1,
+		PlaceholderText = "Search tabs…",
+		Text  = "",
+		TextSize = 13,
+		ClearTextOnFocus = false,
+		ThemeTag = {
+			TextColor3       = "Text",
+			PlaceholderColor3 = "Placeholder",
+		},
+		FontFace = Font.new(at and "rbxasset://fonts/families/GothamSSm.json" or "rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium),
+		TextXAlignment = "Left",
+		LayoutOrder = 2,
+		Parent = tabSearchBg,
+	})
+
+	-- Layout inside pill
+	at("UIListLayout", {
+		FillDirection  = "Horizontal",
+		VerticalAlignment = "Center",
+		Padding        = UDim.new(0, 6),
+		Parent         = tabSearchBg,
+	})
+	at("UIPadding", {
+		PaddingLeft  = UDim.new(0, 9),
+		PaddingRight = UDim.new(0, 9),
+		Parent       = tabSearchBg,
+	})
+
+	-- Adjust sidebar top so it sits below the search bar
+	aw.UIElements.SideBar.Position = UDim2.new(0, 0, 0, tabSearchHeight + tabSearchMargin + 2)
+	aw.UIElements.SideBar.AnchorPoint = Vector2.new(0, 0)
+
+	-- Focus glow
+	tabSearchBox.Focused:Connect(function()
+		TweenService:Create(tabSearchBg, TweenInfo.new(0.18, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.85}):Play()
+	end)
+	tabSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local query = tabSearchBox.Text:lower():gsub("%s+","")
+		clearBtn.Visible = query ~= ""
+		-- Filter tabs by title
+		if G and G.Tabs then
+			for idx, tabObj in pairs(G.Tabs) do
+				local name = (tabObj.Title or ""):lower():gsub("%s+","")
+				local match = query == "" or name:find(query, 1, true)
+				if tabObj.UIElements and tabObj.UIElements.Main then
+					local vis = match and true or false
+					if tabObj.UIElements.Main.Visible ~= vis then
+						TweenService:Create(tabObj.UIElements.Main, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
+							ImageTransparency = vis and (tabObj.Selected and 0 or 1) or 1,
+						}):Play()
+						tabObj.UIElements.Main.Visible = vis
+					end
+				end
+			end
+		end
+	end)
+	tabSearchBox.FocusLost:Connect(function()
+		TweenService:Create(tabSearchBg, TweenInfo.new(0.18, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.93}):Play()
+	end)
+	clearBtn.MouseButton1Click:Connect(function()
+		tabSearchBox.Text = ""
+		clearBtn.Visible = false
+	end)
+end
+-- ── End Tab Search Bar ─────────────────────────────────────────
+
 function aw.Tab(H,J)
 J.Parent=aw.UIElements.SideBar.Frame
 return G.New(J,av.WindUI.UIScale)
@@ -40000,39 +40168,6 @@ task.spawn(function()
 		end
 		task.spawn(driftShimmer)
 
-		-- Floating colour orbs in background
-		local orbColors = {
-			Color3.fromHex("#00FFFF"),
-			Color3.fromHex("#FF00FF"),
-			Color3.fromHex("#7700FF"),
-		}
-		for orbIdx = 1, 3 do
-			local orb = Instance.new("ImageLabel")
-			orb.Name = "WindUI_Orb"..orbIdx
-			orb.Size = UDim2.new(0, 120, 0, 120)
-			orb.AnchorPoint = Vector2.new(0.5, 0.5)
-			orb.Position = UDim2.new(math.random(20, 80)/100, 0, math.random(20, 80)/100, 0)
-			orb.BackgroundTransparency = 1
-			orb.Image = "rbxassetid://111665032676235"
-			orb.ImageColor3 = orbColors[orbIdx]
-			orb.ImageTransparency = 0.85
-			orb.ZIndex = 1
-			orb.Parent = bgFrame
-
-			local startPos = orb.Position
-			local function floatOrb(o)
-				while o and o.Parent do
-					local tx = math.random(15, 85)/100
-					local ty = math.random(15, 85)/100
-					TweenService:Create(o, TweenInfo.new(math.random(4, 7), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-						Position = UDim2.new(tx, 0, ty, 0),
-						ImageTransparency = math.random(75, 90)/100,
-					}):Play()
-					task.wait(math.random(4, 7))
-				end
-			end
-			task.spawn(floatOrb, orb)
-		end
 	end
 
 	-- ── 3. WINDOW OPEN – entrance animation upgrade ──
