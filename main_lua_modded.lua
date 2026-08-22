@@ -36200,14 +36200,6 @@ ar.ContainerFrame=ar.UIElements.ContainerFrameCanvas
 
 ak.AddSignal(ar.UIElements.Main.MouseButton1Click,function()
 if not ar.Locked then
--- WindUI FX: click press + spring-back on tab
-local _ts=game:GetService"TweenService"
-local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
-if not sc then sc=Instance.new("UIScale") sc.Scale=1 sc.Parent=ar.UIElements.Main end
-_ts:Create(sc,TweenInfo.new(0.07,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=0.96}):Play()
-task.delay(0.1,function()
-_ts:Create(sc,TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
-end)
 ao:SelectTab(as)
 end
 end)
@@ -36253,26 +36245,10 @@ end
 
 ak.AddSignal(ar.UIElements.Main.MouseEnter,function()
 if not ar.Locked then
--- WindUI FX: smooth tab hover with subtle scale nudge
 ak.SetThemeTag(ar.UIElements.Main.Frame,{
 ImageTransparency="TabBackgroundHoverTransparency",
 ImageColor3="TabBackgroundHover",
-},0.12)
-local _ts=game:GetService"TweenService"
-if ar.UIElements.Main:FindFirstChildOfClass"UIScale" then
-_ts:Create(ar.UIElements.Main:FindFirstChildOfClass"UIScale",TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1.025}):Play()
-else
-local sc=Instance.new("UIScale") sc.Scale=1 sc.Parent=ar.UIElements.Main
-_ts:Create(sc,TweenInfo.new(0.12,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1.025}):Play()
-end
-end
-end)
-ak.AddSignal(ar.UIElements.Main.MouseLeave,function()
-if not ar.Locked then
-local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
-if sc then
-game:GetService"TweenService":Create(sc,TweenInfo.new(0.15,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1}):Play()
-end
+},0.1)
 end
 end)
 ak.AddSignal(ar.UIElements.Main.InputEnded,function()
@@ -36295,11 +36271,7 @@ end
 if not ar.Locked then
 ak.SetThemeTag(ar.UIElements.Main.Frame,{
 ImageTransparency="TabBorderTransparency",
-},0.12)
-local sc=ar.UIElements.Main:FindFirstChildOfClass"UIScale"
-if sc then
-game:GetService"TweenService":Create(sc,TweenInfo.new(0.15,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Scale=1}):Play()
-end
+},0.1)
 end
 end)
 
@@ -36505,42 +36477,33 @@ end
 ao.Tabs[aq].Selected=true
 
 task.spawn(function()
--- WindUI FX: Enhanced Tab Switch Animation (slide + fade)
-local TweenService = game:GetService("TweenService")
-local prevContainer = nil
 for ar,as in next,ao.Containers do
-	if as.Visible then
-		prevContainer = as
-	end
+as.AnchorPoint=Vector2.new(0,0.05)
+as.Visible=false
 end
+ao.Containers[aq].Visible=true
 
--- Slide-out previous tab (if any)
-if prevContainer and prevContainer ~= ao.Containers[aq] then
-	prevContainer.Position = UDim2.new(0, 0, 0, 0)
-	local outTween = TweenService:Create(prevContainer, TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-		Position = UDim2.new(-0.06, 0, 0, 0),
-	})
-	outTween:Play()
-	task.wait(0.12)
-	prevContainer.Visible = false
-	prevContainer.Position = UDim2.new(0, 0, 0, 0)
+-- [[ MOD: Enhanced Tab Switch Animation ]]
+local ar=TweenService
+ao.Containers[aq].Position=UDim2.new(0,0,0,10)
+ao.Containers[aq].GroupTransparency=1
+
+local as=TweenInfo.new(0.28,Enum.EasingStyle.Quint,Enum.EasingDirection.Out)
+ar:Create(ao.Containers[aq],as,{
+AnchorPoint=Vector2.new(0,0),
+Position=UDim2.new(0,0,0,0),
+GroupTransparency=0,
+}):Play()
+
+-- Tab button scale bounce
+local tabMain=ao.Tabs[aq].UIElements.Main
+local scaleObj=tabMain:FindFirstChildOfClass"UIScale"
+if not scaleObj then
+scaleObj=Instance.new("UIScale")
+scaleObj.Parent=tabMain
 end
-
-for ar,as in next,ao.Containers do
-	if as ~= ao.Containers[aq] then
-		as.Visible = false
-	end
-end
-
--- Slide-in new tab
-local target = ao.Containers[aq]
-target.Position = UDim2.new(0.06, 0, 0, 0)
-target.Visible = true
-
-local inTween = TweenService:Create(target, TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-	Position = UDim2.new(0, 0, 0, 0),
-})
-inTween:Play()
+scaleObj.Scale=0.95
+ar:Create(scaleObj,TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
 end)
 
 ao.OnChangeFunc(aq)
@@ -36606,9 +36569,6 @@ ImageTransparency=.7,
 })
 })
 
--- WindUI FX: compact section header height
-ar.HeaderSize=34
-
 local au=ai("Frame",{
 Size=UDim2.new(1,0,0,ar.HeaderSize),
 BackgroundTransparency=1,
@@ -36622,43 +36582,36 @@ Text="",
 },{
 as,
 ai("TextLabel",{
-Text=ar.Title:upper(),
+Text=ar.Title,
 TextXAlignment="Left",
 Size=UDim2.new(
 1,
 as and(-ar.IconSize-10)*2
 or(-ar.IconSize-10),
+
 1,
 0
 ),
 ThemeTag={
 TextColor3="Text",
 },
-FontFace=Font.new(af.Font,Enum.FontWeight.Bold),
-TextSize=11,
+FontFace=Font.new(af.Font,Enum.FontWeight.SemiBold),
+TextSize=14,
 BackgroundTransparency=1,
-TextTransparency=0.5,
-TextWrapped=true,
-LetterSpacing=2,
+TextTransparency=.7,
+
+TextWrapped=true
 }),
 ai("UIListLayout",{
 FillDirection="Horizontal",
 VerticalAlignment="Center",
-Padding=UDim.new(0,7)
+Padding=UDim.new(0,10)
 }),
 at,
 ai("UIPadding",{
 PaddingLeft=UDim.new(0,11),
-PaddingRight=UDim.new(0,9),
+PaddingRight=UDim.new(0,11),
 })
-}),
--- Thin separator line under header
-ai("Frame",{
-Size=UDim2.new(1,-22,0,1),
-Position=UDim2.new(0,11,0,ar.HeaderSize-1),
-BackgroundTransparency=0.85,
-ThemeTag={BackgroundColor3="Text"},
-Name="Divider",
 }),
 ai("Frame",{
 BackgroundTransparency=1,
@@ -36666,7 +36619,7 @@ Size=UDim2.new(1,0,0,0),
 AutomaticSize="Y",
 Name="Content",
 Visible=true,
-Position=UDim2.new(0,0,0,ar.HeaderSize+2)
+Position=UDim2.new(0,0,0,ar.HeaderSize)
 },{
 ai("UIListLayout",{
 FillDirection="Vertical",
@@ -36689,36 +36642,20 @@ end
 function ar.Open(av)
 if ar.Expandable then
 ar.Opened=true
--- WindUI FX: smoother spring open with content fade
-local TweenService=game:GetService"TweenService"
-local contentH=au.Content.AbsoluteSize.Y/ap
-TweenService:Create(au,TweenInfo.new(0.38,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
-Size=UDim2.new(1,0,0,ar.HeaderSize+contentH+4)
-}):Play()
-TweenService:Create(at.ImageLabel,TweenInfo.new(0.22,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
-Rotation=180
-}):Play()
--- Fade content in
-au.Content.Visible=true
-TweenService:Create(au.Content,TweenInfo.new(0.18,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
-GroupTransparency=0
-}):Play()
+ak(au,0.33,{
+Size=UDim2.new(1,0,0,ar.HeaderSize+(au.Content.AbsoluteSize.Y/ap))
+},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
+
+ak(at.ImageLabel,0.1,{Rotation=180},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
 end
 end
 function ar.Close(av)
 if ar.Expandable then
 ar.Opened=false
-local TweenService=game:GetService"TweenService"
--- Fade content out then collapse
-TweenService:Create(au.Content,TweenInfo.new(0.1,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
-GroupTransparency=1
-}):Play()
-TweenService:Create(au,TweenInfo.new(0.28,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
+ak(au,0.26,{
 Size=UDim2.new(1,0,0,ar.HeaderSize)
-}):Play()
-TweenService:Create(at.ImageLabel,TweenInfo.new(0.22,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{
-Rotation=0
-}):Play()
+},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
+ak(at.ImageLabel,0.1,{Rotation=0},Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
 end
 end
 
@@ -37126,6 +37063,48 @@ aA()
 end
 end)
 
+-- [[ MOD: Button Animated Background Gradient ]]
+local btnGradient=Instance.new("UIGradient")
+btnGradient.Color=ColorSequence.new{
+    ColorSequenceKeypoint.new(0,Color3.fromRGB(30,30,30)),
+    ColorSequenceKeypoint.new(0.5,Color3.fromRGB(70,120,255)),
+    ColorSequenceKeypoint.new(1,Color3.fromRGB(20,20,20))
+}
+btnGradient.Transparency=NumberSequence.new{
+    NumberSequenceKeypoint.new(0,0.2),
+    NumberSequenceKeypoint.new(0.5,0.5),
+    NumberSequenceKeypoint.new(1,0.2)
+}
+btnGradient.Rotation=0
+btnGradient.Parent=aB.Main
+task.spawn(function()
+    while aB.Main and aB.Main.Parent do
+        TweenService:Create(
+            btnGradient,
+            TweenInfo.new(6,Enum.EasingStyle.Linear),
+            {Rotation=360}
+        ):Play()
+        task.wait(6)
+        btnGradient.Rotation=0
+    end
+end)
+
+-- [[ MOD: Button LED Border ]]
+local btnLedStroke=Instance.new("UIStroke")
+btnLedStroke.Thickness=2
+btnLedStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+btnLedStroke.Color=Color3.fromRGB(70,120,255)
+btnLedStroke.Transparency=0.3
+btnLedStroke.Parent=aB.Main
+task.spawn(function()
+    local hue=0.5
+    while aB.Main and aB.Main.Parent do
+        hue=(hue+0.004)%1
+        btnLedStroke.Color=Color3.fromHSV(hue,1,1)
+        task.wait(0.03)
+    end
+end)
+
 return aB
 end
 
@@ -37315,6 +37294,7 @@ end)
 local af=aa(game:GetService"UserInputService")
 local ai=aa(game:GetService"RunService")
 local ak=aa(game:GetService"Players")
+local TweenService=aa(game:GetService"TweenService")
 
 local al=workspace.CurrentCamera
 
@@ -37555,88 +37535,6 @@ PaddingBottom=UDim.new(0,aw.UIPadding/2),
 
 })
 
--- ── WindUI FX: Tab Search Bar ──
-local _tabSearchBarHeight = 34
-local _tabSearchBar = ao("Frame",{
-	Name = "WindUI_TabSearchBar",
-	Size = UDim2.new(1, -(aw.UIPadding), 0, _tabSearchBarHeight),
-	Position = UDim2.new(0, aw.UIPadding/2, 0, aw.UIPadding/2),
-	BackgroundTransparency = 1,
-})
-
-local _tabSearchBg = an.NewRoundFrame(10, "Squircle", {
-	Size = UDim2.new(1, 0, 1, 0),
-	ThemeTag = { ImageColor3 = "TabBackground" },
-	ImageTransparency = 0.3,
-	Parent = _tabSearchBar,
-	Name = "Bg",
-}, {
-	an.NewRoundFrame(10, "SquircleOutline", {
-		Size = UDim2.new(1, 0, 1, 0),
-		ThemeTag = { ImageColor3 = "TabBorder" },
-		ImageTransparency = 0.5,
-		Name = "Outline",
-	}),
-})
-
-local _tabSearchIcon = ao("ImageLabel", {
-	Size = UDim2.new(0, 13, 0, 13),
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 9, 0.5, 0),
-	BackgroundTransparency = 1,
-	ThemeTag = { ImageColor3 = "Text" },
-	ImageTransparency = 0.5,
-	Image = an.Icon("search")[1],
-	ImageRectOffset = an.Icon("search")[2].ImageRectPosition,
-	ImageRectSize = an.Icon("search")[2].ImageRectSize,
-	Parent = _tabSearchBar,
-	ZIndex = 2,
-})
-
-local _tabSearchBox = ao("TextBox", {
-	Size = UDim2.new(1, -28, 1, -8),
-	Position = UDim2.new(0, 25, 0.5, 0),
-	AnchorPoint = Vector2.new(0, 0.5),
-	BackgroundTransparency = 1,
-	ThemeTag = { TextColor3 = "Text" },
-	TextTransparency = 0.3,
-	PlaceholderText = "Search tabs...",
-	PlaceholderColor3 = Color3.fromRGB(160, 160, 160),
-	TextSize = 13,
-	FontFace = Font.new(an.Font, Enum.FontWeight.Medium),
-	TextXAlignment = Enum.TextXAlignment.Left,
-	ClearTextOnFocus = false,
-	Text = "",
-	ZIndex = 2,
-	Parent = _tabSearchBar,
-})
-
--- Focus glow on search bar
-an.AddSignal(_tabSearchBox.Focused, function()
-	an.Tween(_tabSearchBg, 0.15, { ImageTransparency = 0.15 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-end)
-an.AddSignal(_tabSearchBox.FocusLost, function()
-	an.Tween(_tabSearchBg, 0.2, { ImageTransparency = 0.3 }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-end)
-
--- Filter tabs by search text
-an.AddSignal(_tabSearchBox:GetPropertyChangedSignal("Text"), function()
-	local query = string.lower(_tabSearchBox.Text)
-	for _, tabBtn in ipairs(aw.UIElements.SideBar.Frame:GetChildren()) do
-		if tabBtn:IsA("Frame") or tabBtn:IsA("ImageLabel") or tabBtn:IsA("ImageButton") then
-			local lbl = tabBtn:FindFirstChildWhichIsA("Frame", true)
-			local txt = lbl and lbl:FindFirstChildWhichIsA("TextLabel", true)
-			if txt then
-				local match = query == "" or string.find(string.lower(txt.Text), query, 1, true)
-				an.Tween(tabBtn, 0.12, { Size = UDim2.new(1, -7, 0, match and tabBtn.AbsoluteSize.Y or 0) }, Enum.EasingStyle.Quint, Enum.EasingDirection.Out):Play()
-				tabBtn.Visible = true
-				tabBtn.ClipsDescendants = true
-			end
-		end
-	end
-end)
--- ── End Tab Search Bar ──
-
 aw.UIElements.SideBarContainer=ao("Frame",{
 Size=UDim2.new(
 0,
@@ -37657,18 +37555,6 @@ AnchorPoint=Vector2.new(0,1),
 }),
 aw.UIElements.SideBar,
 })
-
--- Attach Tab Search Bar to sidebar container
-_tabSearchBar.Parent = aw.UIElements.SideBarContainer
--- Shrink sidebar to leave room for the search bar at top
-aw.UIElements.SideBar.Size = UDim2.new(
-	aw.UIElements.SideBar.Size.X.Scale,
-	aw.UIElements.SideBar.Size.X.Offset,
-	1,
-	(not aw.HideSearchBar and -45 or 0) - _tabSearchBarHeight - aw.UIPadding
-)
-aw.UIElements.SideBar.Position = UDim2.new(0, 0, 1, 0)
-aw.UIElements.SideBar.AnchorPoint = Vector2.new(0, 1)
 
 if aw.ScrollBarEnabled then
 as(
@@ -38266,6 +38152,48 @@ PaddingBottom=UDim.new(0,aw.UIPadding),
 }),
 }),
 })
+
+-- [[ MOD: Animated Background Gradient ]]
+local bgGradient=Instance.new("UIGradient")
+bgGradient.Color=ColorSequence.new{
+    ColorSequenceKeypoint.new(0,Color3.fromRGB(30,30,30)),
+    ColorSequenceKeypoint.new(0.5,Color3.fromRGB(70,120,255)),
+    ColorSequenceKeypoint.new(1,Color3.fromRGB(20,20,20))
+}
+bgGradient.Transparency=NumberSequence.new{
+    NumberSequenceKeypoint.new(0,0.2),
+    NumberSequenceKeypoint.new(0.5,0.5),
+    NumberSequenceKeypoint.new(1,0.2)
+}
+bgGradient.Rotation=0
+bgGradient.Parent=aw.UIElements.Main.Background
+task.spawn(function()
+    while aw.UIElements.Main and aw.UIElements.Main.Parent do
+        TweenService:Create(
+            bgGradient,
+            TweenInfo.new(6,Enum.EasingStyle.Linear),
+            {Rotation=360}
+        ):Play()
+        task.wait(6)
+        bgGradient.Rotation=0
+    end
+end)
+
+-- [[ MOD: LED Border Effect (UIStroke animated rainbow) ]]
+local ledStroke=Instance.new("UIStroke")
+ledStroke.Thickness=2.5
+ledStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+ledStroke.Color=Color3.fromRGB(70,120,255)
+ledStroke.Transparency=0
+ledStroke.Parent=aw.UIElements.Main
+task.spawn(function()
+    local hue=0
+    while aw.UIElements.Main and aw.UIElements.Main.Parent do
+        hue=(hue+0.004)%1
+        ledStroke.Color=Color3.fromHSV(hue,1,1)
+        task.wait(0.03)
+    end
+end)
 
 an.AddSignal(aw.UIElements.Main.Main.Topbar.Left:GetPropertyChangedSignal"AbsoluteSize",function()
 local z=0
@@ -39082,148 +39010,6 @@ aw.CurrentTab=H
 end)
 
 aw.TabModule=G
-
--- ── WindUI FX: Tab Search Bar ──────────────────────────────────
-do
-	local TweenService = game:GetService("TweenService")
-	local an2 = at -- reuse creator shorthand
-
-	-- Search bar container (sits above the sidebar scrollframe)
-	local tabSearchHeight = 34
-	local tabSearchMargin = math.floor(aw.UIPadding / 2)
-
-	-- Shrink sidebar to make room for search bar at top
-	aw.UIElements.SideBar.Size = UDim2.new(
-		1,
-		aw.ScrollBarEnabled and -3 - tabSearchMargin or 0,
-		1,
-		(not aw.HideSearchBar and -45 or 0) - tabSearchHeight - tabSearchMargin - 2
-	)
-
-	local tabSearchFrame = an2("Frame", {
-		Name  = "WindUI_TabSearch",
-		Size  = UDim2.new(1, -tabSearchMargin * 2, 0, tabSearchHeight),
-		Position = UDim2.new(0, tabSearchMargin, 0, 0),
-		BackgroundTransparency = 1,
-		Parent = aw.UIElements.SideBarContainer,
-		ZIndex = 10,
-	})
-
-	-- Background pill
-	local tabSearchBg = an2("Frame", {
-		Size = UDim2.new(1, 0, 1, 0),
-		BackgroundTransparency = 0.93,
-		ThemeTag = { BackgroundColor3 = "Text" },
-		Parent = tabSearchFrame,
-	}, {
-		an2("UICorner", { CornerRadius = UDim.new(0, 10) }),
-		an2("UIStroke", { Thickness = 1, Transparency = 0.88, ThemeTag = { Color = "Text" } }),
-	})
-
-	-- Search icon
-	local iconImg = at("ImageLabel", {
-		Size       = UDim2.new(0, 14, 0, 14),
-		BackgroundTransparency = 1,
-		Image      = "rbxassetid://92867583610071", -- a-arrow-down fallback; will be overwritten
-		ThemeTag   = { ImageColor3 = "Icon" },
-		ImageTransparency = 0.35,
-		LayoutOrder = 1,
-		Parent     = tabSearchBg,
-	})
-	-- Use the library's own icon helper if available
-	task.spawn(function()
-		local ok, icons = pcall(function() return a.load'b' end)
-		if ok and icons then
-			local mag = icons["search"] or icons["magnifying-glass"]
-			if mag then
-				iconImg.Image = mag
-				iconImg.ImageRectOffset = Vector2.new(0,0)
-				iconImg.ImageRectSize  = Vector2.new(0,0)
-			end
-		end
-	end)
-
-	-- Clear / X button
-	local clearBtn = at("TextButton", {
-		Size  = UDim2.new(0, 14, 0, 14),
-		BackgroundTransparency = 1,
-		Text  = "✕",
-		TextSize = 11,
-		ThemeTag = { TextColor3 = "Text" },
-		TextTransparency = 0.5,
-		Visible = false,
-		LayoutOrder = 3,
-		Parent = tabSearchBg,
-	})
-
-	-- TextBox
-	local tabSearchBox = at("TextBox", {
-		Size  = UDim2.new(1, -42, 1, 0),
-		BackgroundTransparency = 1,
-		PlaceholderText = "Search tabs…",
-		Text  = "",
-		TextSize = 13,
-		ClearTextOnFocus = false,
-		ThemeTag = {
-			TextColor3       = "Text",
-			PlaceholderColor3 = "Placeholder",
-		},
-		FontFace = Font.new(at and "rbxasset://fonts/families/GothamSSm.json" or "rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Medium),
-		TextXAlignment = "Left",
-		LayoutOrder = 2,
-		Parent = tabSearchBg,
-	})
-
-	-- Layout inside pill
-	at("UIListLayout", {
-		FillDirection  = "Horizontal",
-		VerticalAlignment = "Center",
-		Padding        = UDim.new(0, 6),
-		Parent         = tabSearchBg,
-	})
-	at("UIPadding", {
-		PaddingLeft  = UDim.new(0, 9),
-		PaddingRight = UDim.new(0, 9),
-		Parent       = tabSearchBg,
-	})
-
-	-- Adjust sidebar top so it sits below the search bar
-	aw.UIElements.SideBar.Position = UDim2.new(0, 0, 0, tabSearchHeight + tabSearchMargin + 2)
-	aw.UIElements.SideBar.AnchorPoint = Vector2.new(0, 0)
-
-	-- Focus glow
-	tabSearchBox.Focused:Connect(function()
-		TweenService:Create(tabSearchBg, TweenInfo.new(0.18, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.85}):Play()
-	end)
-	tabSearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-		local query = tabSearchBox.Text:lower():gsub("%s+","")
-		clearBtn.Visible = query ~= ""
-		-- Filter tabs by title
-		if G and G.Tabs then
-			for idx, tabObj in pairs(G.Tabs) do
-				local name = (tabObj.Title or ""):lower():gsub("%s+","")
-				local match = query == "" or name:find(query, 1, true)
-				if tabObj.UIElements and tabObj.UIElements.Main then
-					local vis = match and true or false
-					if tabObj.UIElements.Main.Visible ~= vis then
-						TweenService:Create(tabObj.UIElements.Main, TweenInfo.new(0.15, Enum.EasingStyle.Quint), {
-							ImageTransparency = vis and (tabObj.Selected and 0 or 1) or 1,
-						}):Play()
-						tabObj.UIElements.Main.Visible = vis
-					end
-				end
-			end
-		end
-	end)
-	tabSearchBox.FocusLost:Connect(function()
-		TweenService:Create(tabSearchBg, TweenInfo.new(0.18, Enum.EasingStyle.Quint), {BackgroundTransparency = 0.93}):Play()
-	end)
-	clearBtn.MouseButton1Click:Connect(function()
-		tabSearchBox.Text = ""
-		clearBtn.Visible = false
-	end)
-end
--- ── End Tab Search Bar ─────────────────────────────────────────
 
 function aw.Tab(H,J)
 J.Parent=aw.UIElements.SideBar.Frame
@@ -40187,173 +39973,6 @@ aa.Window=h
 if aA.Acrylic then
 au.init()
 end
-
--- ================================================================
--- WindUI FX MOD  |  LED Border + Background Effects + Animations
--- ================================================================
-task.spawn(function()
-	-- Wait until Main frame is ready
-	local mainFrame = h and h.UIElements and h.UIElements.Main
-	if not mainFrame then return end
-
-	local RunService = game:GetService("RunService")
-	local TweenService = game:GetService("TweenService")
-
-	-- ── 1. LED BORDER (rotating colour sweep around the window) ──
-	local ledOutline = Instance.new("ImageLabel")
-	ledOutline.Name = "WindUI_LEDBorder"
-	ledOutline.Size = UDim2.new(1, 12, 1, 12)
-	ledOutline.Position = UDim2.new(0.5, 0, 0.5, 0)
-	ledOutline.AnchorPoint = Vector2.new(0.5, 0.5)
-	ledOutline.BackgroundTransparency = 1
-	ledOutline.Image = "rbxassetid://8992230677"
-	ledOutline.ScaleType = Enum.ScaleType.Slice
-	ledOutline.SliceCenter = Rect.new(99, 99, 99, 99)
-	ledOutline.ImageTransparency = 0
-	ledOutline.ZIndex = -1
-	ledOutline.Parent = mainFrame
-
-	local ledGradient = Instance.new("UIGradient")
-	ledGradient.Rotation = 0
-	ledGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0,   Color3.fromHex("#00FFFF")),
-		ColorSequenceKeypoint.new(0.25, Color3.fromHex("#FF00FF")),
-		ColorSequenceKeypoint.new(0.5,  Color3.fromHex("#00FFCC")),
-		ColorSequenceKeypoint.new(0.75, Color3.fromHex("#FF6600")),
-		ColorSequenceKeypoint.new(1,    Color3.fromHex("#00FFFF")),
-	})
-	ledGradient.Parent = ledOutline
-
-	-- LED colour cycling
-	local ledAngle = 0
-	local ledConn = RunService.Heartbeat:Connect(function(dt)
-		if not ledOutline or not ledOutline.Parent then return end
-		ledAngle = (ledAngle + dt * 60) % 360
-		ledGradient.Rotation = ledAngle
-	end)
-
-	-- Pulse transparency on LED border (breathing glow)
-	local function ledBreath()
-		while ledOutline and ledOutline.Parent do
-			TweenService:Create(ledOutline, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0.5}):Play()
-			task.wait(1.2)
-			TweenService:Create(ledOutline, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0}):Play()
-			task.wait(1.2)
-		end
-	end
-	task.spawn(ledBreath)
-
-	-- ── 2. BACKGROUND SHIMMER / PARTICLES ──
-	-- Animated gradient overlay that slowly drifts across the background
-	local bgFrame = mainFrame:FindFirstChild("Background")
-	if bgFrame then
-		local shimmer = Instance.new("ImageLabel")
-		shimmer.Name = "WindUI_Shimmer"
-		shimmer.Size = UDim2.new(2, 0, 2, 0)
-		shimmer.Position = UDim2.new(-0.5, 0, -0.5, 0)
-		shimmer.BackgroundTransparency = 1
-		shimmer.Image = "rbxassetid://111665032676235"
-		shimmer.ImageTransparency = 0.92
-		shimmer.ZIndex = 1
-		shimmer.Parent = bgFrame
-
-		local shimGradient = Instance.new("UIGradient")
-		shimGradient.Rotation = 45
-		shimGradient.Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0,   Color3.fromHex("#FFFFFF")),
-			ColorSequenceKeypoint.new(0.45, Color3.fromHex("#8888FF")),
-			ColorSequenceKeypoint.new(1,    Color3.fromHex("#FFFFFF")),
-		})
-		shimGradient.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0,   1),
-			NumberSequenceKeypoint.new(0.4, 0),
-			NumberSequenceKeypoint.new(0.6, 0),
-			NumberSequenceKeypoint.new(1,   1),
-		})
-		shimGradient.Parent = shimmer
-
-		-- Drift the shimmer diagonally on loop
-		local function driftShimmer()
-			while shimmer and shimmer.Parent do
-				shimmer.Position = UDim2.new(-0.5, 0, -0.5, 0)
-				TweenService:Create(shimmer, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					Position = UDim2.new(-0.3, 0, -0.3, 0),
-					ImageTransparency = 0.88,
-				}):Play()
-				task.wait(4)
-				TweenService:Create(shimmer, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-					Position = UDim2.new(-0.5, 0, -0.5, 0),
-					ImageTransparency = 0.94,
-				}):Play()
-				task.wait(4)
-			end
-		end
-		task.spawn(driftShimmer)
-
-	end
-
-	-- ── 3. WINDOW OPEN – entrance animation upgrade ──
-	-- We hook into the existing Open() by wrapping it
-	local origOpen = h.Open
-	h.Open = function(self, ...)
-		-- Scale-in entrance
-		if mainFrame then
-			mainFrame.Size = UDim2.new(h.Size.X.Scale, h.Size.X.Offset * 0.8, h.Size.Y.Scale, h.Size.Y.Offset * 0.8)
-			TweenService:Create(mainFrame, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-				Size = h.Size,
-			}):Play()
-		end
-		return origOpen(self, ...)
-	end
-
-	-- ── 4. BUTTON RIPPLE via wrapping existing Tween calls ──
-	-- Adds a subtle scale-bounce to all TextButton descendants inside main
-	local function hookButton(btn)
-		if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-			if btn:FindFirstChild("_WindFX_Hooked") then return end
-			local tag = Instance.new("BoolValue")
-			tag.Name = "_WindFX_Hooked"
-			tag.Parent = btn
-
-			btn.MouseButton1Down:Connect(function()
-				TweenService:Create(btn, TweenInfo.new(0.08, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-					Size = UDim2.new(btn.Size.X.Scale, btn.Size.X.Offset - 2, btn.Size.Y.Scale, btn.Size.Y.Offset - 2),
-				}):Play()
-			end)
-			btn.MouseButton1Up:Connect(function()
-				TweenService:Create(btn, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Size = UDim2.new(btn.Size.X.Scale, btn.Size.X.Offset + 2, btn.Size.Y.Scale, btn.Size.Y.Offset + 2),
-				}):Play()
-				task.wait(0.25)
-				TweenService:Create(btn, TweenInfo.new(0.1, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-					Size = UDim2.new(btn.Size.X.Scale, btn.Size.X.Offset, btn.Size.Y.Scale, btn.Size.Y.Offset),
-				}):Play()
-			end)
-		end
-	end
-
-	-- Hook existing and future buttons
-	local function hookAllButtons(parent)
-		for _, v in ipairs(parent:GetDescendants()) do
-			hookButton(v)
-		end
-		parent.DescendantAdded:Connect(function(v)
-			task.wait()
-			hookButton(v)
-		end)
-	end
-	if mainFrame then hookAllButtons(mainFrame) end
-
-	-- ── 5. CLEAN UP on window destroy ──
-	h.UIElements.Main.AncestryChanged:Connect(function(_, newParent)
-		if not newParent then
-			ledConn:Disconnect()
-		end
-	end)
-end)
--- ================================================================
--- End WindUI FX MOD
--- ================================================================
 
 
 
