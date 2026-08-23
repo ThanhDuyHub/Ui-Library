@@ -38195,6 +38195,130 @@ task.spawn(function()
     end
 end)
 
+-- [[ MOD: Save Config Button (Center Topbar) ]]
+do
+    local topbar=aw.UIElements.Main.Main.Topbar
+
+    -- Container canh giữa topbar, không ảnh hưởng layout Left/Right
+    local saveContainer=ao("Frame",{
+        Size=UDim2.new(0,110,0,32),
+        AnchorPoint=Vector2.new(0.5,0.5),
+        Position=UDim2.new(0.5,0,0.5,0),
+        BackgroundTransparency=1,
+        ZIndex=200,
+        Parent=topbar,
+    })
+
+    -- Nền nút
+    local saveBg=an.NewRoundFrame(10,"Squircle",{
+        Size=UDim2.new(1,0,1,0),
+        ThemeTag={ImageColor3="Text"},
+        ImageTransparency=0.88,
+        ZIndex=200,
+        Parent=saveContainer,
+    })
+
+    -- Viền nút
+    local saveBorder=an.NewRoundFrame(10,"SquircleOutline",{
+        Size=UDim2.new(1,0,1,0),
+        ThemeTag={ImageColor3="Text"},
+        ImageTransparency=0.75,
+        ZIndex=201,
+        Parent=saveContainer,
+    })
+
+    -- Icon save (disk)
+    local saveIcon=ao("ImageLabel",{
+        Size=UDim2.new(0,14,0,14),
+        AnchorPoint=Vector2.new(0,0.5),
+        Position=UDim2.new(0,10,0.5,0),
+        BackgroundTransparency=1,
+        Image=an.Icon("save")[1],
+        ImageRectOffset=an.Icon("save")[2].ImageRectPosition,
+        ImageRectSize=an.Icon("save")[2].ImageRectSize,
+        ThemeTag={ImageColor3="Text"},
+        ImageTransparency=0.1,
+        ZIndex=202,
+        Parent=saveContainer,
+    })
+
+    -- Label nút
+    local saveLabel=ao("TextLabel",{
+        Size=UDim2.new(1,-30,1,0),
+        Position=UDim2.new(0,28,0,0),
+        BackgroundTransparency=1,
+        Text="Save Config",
+        TextSize=14,
+        FontFace=Font.new(an.Font,Enum.FontWeight.SemiBold),
+        ThemeTag={TextColor3="Text"},
+        TextTransparency=0.1,
+        TextXAlignment=Enum.TextXAlignment.Left,
+        ZIndex=202,
+        Parent=saveContainer,
+    })
+
+    -- LED viền nút save (rainbow nhỏ)
+    local saveLed=Instance.new("UIStroke")
+    saveLed.Thickness=1.5
+    saveLed.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
+    saveLed.Color=Color3.fromRGB(100,200,255)
+    saveLed.Transparency=0.3
+    saveLed.Parent=saveContainer
+    task.spawn(function()
+        local hue=0.6
+        while saveContainer and saveContainer.Parent do
+            hue=(hue+0.004)%1
+            saveLed.Color=Color3.fromHSV(hue,1,1)
+            task.wait(0.03)
+        end
+    end)
+
+    -- Nút ấn (transparent, nằm trên cùng)
+    local saveBtn=ao("TextButton",{
+        Size=UDim2.new(1,0,1,0),
+        BackgroundTransparency=1,
+        Text="",
+        ZIndex=203,
+        Parent=saveContainer,
+    })
+
+    -- Hover effect
+    an.AddSignal(saveBtn.MouseEnter,function()
+        ap(saveBg,0.12,{ImageTransparency=0.78}):Play()
+        ap(saveBorder,0.12,{ImageTransparency=0.5}):Play()
+    end)
+    an.AddSignal(saveBtn.MouseLeave,function()
+        ap(saveBg,0.15,{ImageTransparency=0.88}):Play()
+        ap(saveBorder,0.15,{ImageTransparency=0.75}):Play()
+    end)
+
+    -- Click: lưu config + animation feedback
+    an.AddSignal(saveBtn.MouseButton1Click,function()
+        -- Lưu tất cả config
+        if aw.ConfigManager and aw.ConfigManager.Save then
+            pcall(function() aw.ConfigManager:Save() end)
+        end
+
+        -- Visual feedback: flash xanh lá
+        local origText=saveLabel.Text
+        saveLabel.Text="✓ Saved!"
+        ap(saveBg,0.1,{ImageTransparency=0.6}):Play()
+
+        local scaleObj=saveContainer:FindFirstChildOfClass"UIScale"
+        if not scaleObj then
+            scaleObj=Instance.new("UIScale")
+            scaleObj.Parent=saveContainer
+        end
+        scaleObj.Scale=0.93
+        TweenService:Create(scaleObj,TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
+
+        task.delay(1.2,function()
+            saveLabel.Text=origText
+            ap(saveBg,0.2,{ImageTransparency=0.88}):Play()
+        end)
+    end)
+end
+
 an.AddSignal(aw.UIElements.Main.Main.Topbar.Left:GetPropertyChangedSignal"AbsoluteSize",function()
 local z=0
 local A=aw.UIElements.Main.Main.Topbar.Right.UIListLayout.AbsoluteContentSize.X
