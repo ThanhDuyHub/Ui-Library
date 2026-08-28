@@ -30817,6 +30817,21 @@ BackgroundTransparency=1,
 Parent=ai,
 })
 
+-- [[ MOD: Triangle indicator ]]
+local _triLabel=ac("ImageLabel",{
+Size=UDim2.new(0,14,0,14),
+BackgroundTransparency=1,
+AnchorPoint=Vector2.new(0.5,0.5),
+Position=UDim2.new(0,-14,0.5,0),
+Image=ab.Icon"chevron-right"[1],
+ImageRectOffset=ab.Icon"chevron-right"[2].ImageRectPosition,
+ImageRectSize=ab.Icon"chevron-right"[2].ImageRectSize,
+ThemeTag={ImageColor3="Text"},
+ImageTransparency=0.45,
+Rotation=0,
+Parent=ap,
+})
+
 local aq=ab.NewRoundFrame(an,"Squircle",{
 ImageTransparency=0.85,
 ThemeTag={
@@ -31029,6 +31044,17 @@ if aj and ax then
 ab.SafeCallback(aj,aw)
 end
 end)
+end
+
+-- [[ MOD: Triangle rotation hook ]]
+local _origSet=am.Set
+am.Set=function(av,aw,ax,ay)
+    _origSet(av,aw,ax,ay)
+    if _triLabel and _triLabel.Parent then
+        local _targetRot=aw and 90 or 0
+        ad(_triLabel,0.28,{Rotation=_targetRot},Enum.EasingStyle.Back,Enum.EasingDirection.Out):Play()
+        ad(_triLabel,0.15,{ImageTransparency=aw and 0.1 or 0.45}):Play()
+    end
 end
 
 function am.Animate(av,aw,ax)
@@ -37063,48 +37089,6 @@ aA()
 end
 end)
 
--- [[ MOD: Button Animated Background Gradient ]]
-local btnGradient=Instance.new("UIGradient")
-btnGradient.Color=ColorSequence.new{
-    ColorSequenceKeypoint.new(0,Color3.fromRGB(30,30,30)),
-    ColorSequenceKeypoint.new(0.5,Color3.fromRGB(70,120,255)),
-    ColorSequenceKeypoint.new(1,Color3.fromRGB(20,20,20))
-}
-btnGradient.Transparency=NumberSequence.new{
-    NumberSequenceKeypoint.new(0,0.2),
-    NumberSequenceKeypoint.new(0.5,0.5),
-    NumberSequenceKeypoint.new(1,0.2)
-}
-btnGradient.Rotation=0
-btnGradient.Parent=aB.Main
-task.spawn(function()
-    while aB.Main and aB.Main.Parent do
-        TweenService:Create(
-            btnGradient,
-            TweenInfo.new(6,Enum.EasingStyle.Linear),
-            {Rotation=360}
-        ):Play()
-        task.wait(6)
-        btnGradient.Rotation=0
-    end
-end)
-
--- [[ MOD: Button LED Border ]]
-local btnLedStroke=Instance.new("UIStroke")
-btnLedStroke.Thickness=2
-btnLedStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-btnLedStroke.Color=Color3.fromRGB(70,120,255)
-btnLedStroke.Transparency=0.3
-btnLedStroke.Parent=aB.Main
-task.spawn(function()
-    local hue=0.5
-    while aB.Main and aB.Main.Parent do
-        hue=(hue+0.004)%1
-        btnLedStroke.Color=Color3.fromHSV(hue,1,1)
-        task.wait(0.03)
-    end
-end)
-
 return aB
 end
 
@@ -38178,146 +38162,6 @@ task.spawn(function()
         bgGradient.Rotation=0
     end
 end)
-
--- [[ MOD: LED Border Effect (UIStroke animated rainbow) ]]
-local ledStroke=Instance.new("UIStroke")
-ledStroke.Thickness=2.5
-ledStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-ledStroke.Color=Color3.fromRGB(70,120,255)
-ledStroke.Transparency=0
-ledStroke.Parent=aw.UIElements.Main
-task.spawn(function()
-    local hue=0
-    while aw.UIElements.Main and aw.UIElements.Main.Parent do
-        hue=(hue+0.004)%1
-        ledStroke.Color=Color3.fromHSV(hue,1,1)
-        task.wait(0.03)
-    end
-end)
-
--- [[ MOD: Save Config Button (Center Topbar) ]]
-do
-    local topbar=aw.UIElements.Main.Main.Topbar
-
-    -- Container canh giữa topbar, không ảnh hưởng layout Left/Right
-    local saveContainer=ao("Frame",{
-        Size=UDim2.new(0,110,0,32),
-        AnchorPoint=Vector2.new(0.5,0.5),
-        Position=UDim2.new(0.5,0,0.5,0),
-        BackgroundTransparency=1,
-        ZIndex=200,
-        Parent=topbar,
-    })
-
-    -- Nền nút
-    local saveBg=an.NewRoundFrame(10,"Squircle",{
-        Size=UDim2.new(1,0,1,0),
-        ThemeTag={ImageColor3="Text"},
-        ImageTransparency=0.88,
-        ZIndex=200,
-        Parent=saveContainer,
-    })
-
-    -- Viền nút
-    local saveBorder=an.NewRoundFrame(10,"SquircleOutline",{
-        Size=UDim2.new(1,0,1,0),
-        ThemeTag={ImageColor3="Text"},
-        ImageTransparency=0.75,
-        ZIndex=201,
-        Parent=saveContainer,
-    })
-
-    -- Icon save (disk)
-    local saveIcon=ao("ImageLabel",{
-        Size=UDim2.new(0,14,0,14),
-        AnchorPoint=Vector2.new(0,0.5),
-        Position=UDim2.new(0,10,0.5,0),
-        BackgroundTransparency=1,
-        Image=an.Icon("save")[1],
-        ImageRectOffset=an.Icon("save")[2].ImageRectPosition,
-        ImageRectSize=an.Icon("save")[2].ImageRectSize,
-        ThemeTag={ImageColor3="Text"},
-        ImageTransparency=0.1,
-        ZIndex=202,
-        Parent=saveContainer,
-    })
-
-    -- Label nút
-    local saveLabel=ao("TextLabel",{
-        Size=UDim2.new(1,-30,1,0),
-        Position=UDim2.new(0,28,0,0),
-        BackgroundTransparency=1,
-        Text="Save Config",
-        TextSize=14,
-        FontFace=Font.new(an.Font,Enum.FontWeight.SemiBold),
-        ThemeTag={TextColor3="Text"},
-        TextTransparency=0.1,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=202,
-        Parent=saveContainer,
-    })
-
-    -- LED viền nút save (rainbow nhỏ)
-    local saveLed=Instance.new("UIStroke")
-    saveLed.Thickness=1.5
-    saveLed.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-    saveLed.Color=Color3.fromRGB(100,200,255)
-    saveLed.Transparency=0.3
-    saveLed.Parent=saveContainer
-    task.spawn(function()
-        local hue=0.6
-        while saveContainer and saveContainer.Parent do
-            hue=(hue+0.004)%1
-            saveLed.Color=Color3.fromHSV(hue,1,1)
-            task.wait(0.03)
-        end
-    end)
-
-    -- Nút ấn (transparent, nằm trên cùng)
-    local saveBtn=ao("TextButton",{
-        Size=UDim2.new(1,0,1,0),
-        BackgroundTransparency=1,
-        Text="",
-        ZIndex=203,
-        Parent=saveContainer,
-    })
-
-    -- Hover effect
-    an.AddSignal(saveBtn.MouseEnter,function()
-        ap(saveBg,0.12,{ImageTransparency=0.78}):Play()
-        ap(saveBorder,0.12,{ImageTransparency=0.5}):Play()
-    end)
-    an.AddSignal(saveBtn.MouseLeave,function()
-        ap(saveBg,0.15,{ImageTransparency=0.88}):Play()
-        ap(saveBorder,0.15,{ImageTransparency=0.75}):Play()
-    end)
-
-    -- Click: lưu config + animation feedback
-    an.AddSignal(saveBtn.MouseButton1Click,function()
-        -- Lưu tất cả config
-        if aw.ConfigManager and aw.ConfigManager.Save then
-            pcall(function() aw.ConfigManager:Save() end)
-        end
-
-        -- Visual feedback: flash xanh lá
-        local origText=saveLabel.Text
-        saveLabel.Text="✓ Saved!"
-        ap(saveBg,0.1,{ImageTransparency=0.6}):Play()
-
-        local scaleObj=saveContainer:FindFirstChildOfClass"UIScale"
-        if not scaleObj then
-            scaleObj=Instance.new("UIScale")
-            scaleObj.Parent=saveContainer
-        end
-        scaleObj.Scale=0.93
-        TweenService:Create(scaleObj,TweenInfo.new(0.22,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Scale=1}):Play()
-
-        task.delay(1.2,function()
-            saveLabel.Text=origText
-            ap(saveBg,0.2,{ImageTransparency=0.88}):Play()
-        end)
-    end)
-end
 
 an.AddSignal(aw.UIElements.Main.Main.Topbar.Left:GetPropertyChangedSignal"AbsoluteSize",function()
 local z=0
